@@ -1,0 +1,151 @@
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.IntSummaryStatistics;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+//Examples of filter(Predicate), map(Function), forEach(Consumer),reduce(T,BinaryOperator(T,T))
+//collect->summarizingInt(ToIntFunction) -> IntSummaryStatistics,
+//collect->maxBy(Comparator)->Optional<Transaction>
+//collect->groupingBy(Function)->Map<K,List<T>>)
+public class StreamsPractice {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		List<Transaction> txns = getTxnList();
+		//StreamsPractice.TxnsByItemNumber itemFilter= new StreamsPractice.TxnsByItemNumber("ASS54888") ;
+		System.out.println("Checking filter....");
+		List<Transaction> as54888=txns.stream().filter(new StreamsPractice.TxnsByItemNumber("AS54888")).collect(Collectors.toList());
+		for (Transaction t:as54888)
+		{
+			System.out.println(t.itemNumber);
+			//System.out.println(t.txnType);
+			//System.out.println(t.quantity);
+			//System.out.println(t.txnDate);
+		}
+		List<Transaction> inv100=txns.stream().filter(new StreamsPractice.TxnsByItemNumber("INV-100")).collect(Collectors.toList());
+		for (Transaction t:inv100)
+		{
+			System.out.println(t.itemNumber);
+			//System.out.println(t.txnType);
+			//System.out.println(t.quantity);
+			//System.out.println(t.txnDate);
+		}
+		System.out.println("Filtering is done .. Predicate is checked....");
+		System.out.println("Checking mapping....");
+		List<String> strs = txns.stream().map(new TransactionToString()).collect(Collectors.toList());
+		for (String s:strs)
+			System.out.println(s);
+		System.out.println("Mapping done....");
+		System.out.println("Checking Consumer....");
+		txns.stream().forEach(new TransactionConsumption());
+		System.out.println("Done with Consumer....");
+		System.out.println("Checking Summarizing Int....");
+		IntSummaryStatistics iss = txns.stream().collect(Collectors.summarizingInt(t->2*t.quantity));
+		System.out.print("Sum:"+iss.getSum()+" Avg:"+iss.getAverage());
+		System.out.println("Done with Summarizing Int....");		
+
+		System.out.println("Checking Max()....");
+		Optional<StreamsPractice.Transaction> minTxn= txns.stream().collect(Collectors.minBy((x,y)->(x.quantity.compareTo(y.quantity))));
+		//Transaction tt=txns.stream().collect(Collectors.minBy((x,y)->(x.quantity.compareTo(y.quantity)))).get();
+		System.out.print("Max:"+minTxn.get().itemNumber);
+		System.out.println("Done with Max()....");
+		
+		System.out.println("Checking Grouping()....");
+		Map<String,List<Transaction>> grp = txns.stream().collect(Collectors.groupingBy((t->t.itemNumber)));
+		for (Map.Entry<String, List<Transaction>> e:grp.entrySet())
+		{
+			List<Transaction> values=e.getValue();
+			System.out.println("Key:"+e.getKey());
+			for (Transaction t:values)
+			{
+				System.out.println(t.quantity);
+				System.out.println(t.txnType);
+				System.out.println(t.txnDate);
+			}
+		}
+		System.out.println("Done with Grouping()....");
+		System.out.println("Checking with Reduce....");
+		
+		Integer sumTest=txns.stream().map(t->t.quantity).reduce(100,(p,q)->p+q); 
+		System.out.println("Sum is: "+sumTest);
+		System.out.println("Done with Reduce....");
+		
+	}
+	public static class Transaction
+	{
+		String itemNumber;
+		Integer quantity;
+		String txnType;
+		Date txnDate;
+		public Transaction(String itemNumber, int qty, String txnType, Date txnDate)		
+		{
+			this.itemNumber=itemNumber;
+			this.quantity=qty;
+			this.txnType=txnType;
+			this.txnDate=txnDate;			
+		}		
+	}	
+	public static class TxnsByItemNumber implements Predicate<Transaction>
+	{
+		String itemNumber;
+		public TxnsByItemNumber(String itemNumber)
+		{
+			this.itemNumber=itemNumber;
+		}
+		@Override
+		public boolean test(StreamsPractice.Transaction t) {
+			// TODO Auto-generated method stub
+			return t.itemNumber==itemNumber;
+		}				
+	}
+	public static class TxnByTxnType implements Predicate<Transaction>
+	{
+		String txnType;
+		public TxnByTxnType(String txnType)
+		{
+			this.txnType=txnType;
+		}
+		@Override
+		public boolean test(StreamsPractice.Transaction t) {
+			// TODO Auto-generated method stub
+			return t.txnType==txnType;
+		}				
+	}
+	public static class TransactionToString implements Function<Transaction, String> 
+	{
+
+		@Override
+		public String apply(StreamsPractice.Transaction t) {
+			return t.itemNumber+"--"+t.txnType;
+		}
+		
+	}
+	public static class TransactionConsumption implements Consumer<Transaction> 
+	{
+
+		@Override
+		public void accept(Transaction t) {
+			System.out.println("Received "+t.itemNumber+" "+t.txnType+" "+t.quantity+" "+t.txnDate);			
+		}		
+	}	
+	public static List<Transaction> getTxnList()
+	{
+		ArrayList<Transaction> empList=new ArrayList<Transaction>();
+		Transaction t1=new Transaction("AS54888",10, "R", new Date());
+		Transaction t2=new Transaction("AS54888",4, "I", new Date());
+		Transaction t3=new Transaction("INV-100",4, "R", new Date());
+		Transaction t4=new Transaction("INV-100",2, "I", new Date());
+		empList.add(t1);
+		empList.add(t2);
+		empList.add(t3);
+		empList.add(t4);
+		return empList;	
+	}	
+
+}
